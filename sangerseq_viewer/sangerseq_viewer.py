@@ -5,7 +5,8 @@ import argparse
 import patchworklib as pw
 from QUEEN.queen import * 
 from Bio import SeqIO
-from Bio import pairwise2
+from Bio import Align
+#from Bio import pairwise2
 import matplotlib
 matplotlib.rcParams["xtick.major.width"] = 0.4
 matplotlib.rcParams["xtick.minor.width"] = 0.4
@@ -15,6 +16,23 @@ matplotlib.rcParams["ytick.minor.width"] = 0.4
 margin     = pw.param["margin"]
 _atgc_dict = {0:"A", 1:"T", 2:"G", 3:"C"}
 color_dict = {"G":"#f2f059", "C":"#74b2d7", "A":"#79E5B7", "T":"#ff776c", "N":"#FFFFFF", "-":"#FFFFFF", "/":"#FFFFFF"}
+
+aligner = Align.PairwiseAligner()# add parameters here
+aligner.mode = 'global'
+aligner.match_score = 2
+aligner.mismatch_score = 0
+aligner.query_open_gap_score   = -10
+aligner.query_extend_gap_score = -1
+aligner.query_left_open_gap_score    = 0
+aligner.query_right_open_gap_score   = 0
+aligner.query_left_extend_gap_score  = 0
+aligner.query_right_extend_gap_score = 0
+aligner.target_open_gap_score   = -10
+aligner.target_extend_gap_score = -1
+aligner.target_left_open_gap_score    = 0
+aligner.target_right_open_gap_score   = 0
+aligner.target_left_extend_gap_score  = 0
+aligner.target_right_extend_gap_score = 0
 
 def colorbar(ax, color_dict, query, subject, char=False, fontsize=10, label=False, zero_position=0):
     if len(query) > 200:
@@ -132,9 +150,12 @@ def generate_consensusseq(abidata):
 
 def gl_alignment(template, query, single=False): 
     subject   = template.seq
-    alignment = pairwise2.align.globalms(subject+subject, query, 2, 0, -10, -1, penalize_end_gaps=False, one_alignment_only=True)[0] 
-    seqB  = alignment.seqB
-    seqA  = alignment.seqA
+    #alignment = pairwise2.align.globalms(subject+subject, query, 2, 0, -10, -1, penalize_end_gaps=False, one_alignment_only=True)[0] 
+    #seqB  = alignment.seqB
+    #seqA  = alignment.seqA 
+    alignment = aligner.align(subject+subject, query)[0]  
+    seqA = alignment[0] 
+    seqB = alignment[1] 
     score = alignment.score
     for s, q in enumerate(seqB):
         if q == "-" or q == "/":
@@ -159,7 +180,7 @@ def gl_alignment(template, query, single=False):
         new_end = end - len(subject) 
     else:
         new_end = end  
-
+    
     if single == True:
         if new_start > new_end:
             nongap = joindna(cropdna(template, new_start, len(subject), quinable=0), cropdna(template, 0, new_end, quinable=0), quinable=0)
@@ -233,7 +254,7 @@ def recursive_alignment(template, query_list):
     start = min(starts)
     end   = max(ends) 
     if start > end:
-        nongap = joindna(cropdna(template, start, len(template), quinable=0), cropdna(template, 0, end, quinable=0), quinable=0)
+        nongap = joindna(cropdna(template, start, len(template.seq), quinable=0), cropdna(template, 0, end, quinable=0), quinable=0)
     else:
         nongap = cropdna(template, start, end)
     
@@ -242,9 +263,12 @@ def recursive_alignment(template, query_list):
         templates          = []
         new_new_query_list = [] 
         for query in new_query_list:
-            alignment = pairwise2.align.globalms(new_temp, query, 2, 0, -10, -1, penalize_end_gaps=False, one_alignment_only=True)[0]
-            templates.append(alignment.seqA) 
-            new_new_query_list.append(alignment.seqB)  
+            #alignment = pairwise2.align.globalms(new_temp, query, 2, 0, -10, -1, penalize_end_gaps=False, one_alignment_only=True)[0]
+            alignment = aligner.align(new_temp, query)[0]  
+            seqA = alignment[0] 
+            seqB = alignment[1] 
+            templates.append(seqA) 
+            new_new_query_list.append(seqB)  
         
         new_query_list = new_new_query_list 
         if len(set(templates)) == 1:
@@ -600,6 +624,10 @@ def view_sanger(gbkpath, abipath, start=None, end=None, linebreak=None, output=N
                 abifile_path = abipath + "/" + abifile_path 
                 abifile_path_list.append(abifile_path) 
         abifile_path_list.sort() 
+    
+    elif "," in abipath:
+        for aabipath in abipath.split(","):
+            abifile_path_list.append(abipath) 
 
     elif abipath.split(".")[-1] in ("abi", "ab1"):
         abifile_path_list.append(abipath)
