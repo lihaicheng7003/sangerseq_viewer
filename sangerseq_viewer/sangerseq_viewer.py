@@ -864,8 +864,12 @@ def view_sanger(gbkpath, abipath, start=None, end=None, linebreak=None, output=N
         if linebreak is None:
             ax_all  = visualize(template_aligned, abidata, query_aligned, display_quality=display_quality)
         else:
-            ax_alls = [] 
-            for i in range(0, end-start, linebreak):
+            ax_alls = []
+            if start > end:
+                length = (len(template.seq) - start) + end 
+            else:
+                length = end - start
+            for i in range(0, length, linebreak):
                 ax_all = visualize(template_aligned, abidata, query_aligned, abiname=abipath.split("/")[-1], start=i, end=i+linebreak if i+linebreak < len(template_aligned.seq) else len(template_aligned.seq), 
                                    display_quality=display_quality)
                 if i+linebreak > len(template_aligned.seq):
