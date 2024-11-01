@@ -14,7 +14,7 @@ VERSION          = '0.1.4'
 PYTHON_REQUIRES  = ">=3.7"
 
 INSTALL_REQUIRES = [
-    'biopython>=1.78',
+    'biopython==1.78',
     'matplotlib>=3.4.3',
     'patchworklib>=0.4.5',
     'python-queen>=1.1.0',
